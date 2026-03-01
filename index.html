@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0077B6" />
+  <meta name="description" content="HFF-ISBAR — Ferramenta de suporte à passagem de turno em enfermagem baseada na metodologia ISBAR. Norma DGS nº 001/2017." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="HFF-ISBAR" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <title>HFF-ISBAR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --c-i:#0077B6; --c-s:#0096C7; --c-b:#00B4D8; --c-a:#0E7C7B; --c-r:#1B5E4B;
+      --bg:#F0F4F8; --surface:#ffffff; --surface-2:#F8FAFC;
+      --border:#E2E8F0; --text:#1E293B; --text-2:#374151;
+      --muted:#64748B; --muted-2:#94A3B8;
+      --header-bg:#ffffff; --shadow:rgba(0,0,0,0.07);
+      --overlay:rgba(0,0,0,0.45);
+      --safe-top:env(safe-area-inset-top,0px);
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+    [data-theme="dark"] {
+      --bg:#0F172A; --surface:#1E293B; --surface-2:#162032;
+      --border:#334155; --text:#F1F5F9; --text-2:#CBD5E1;
+      --muted:#94A3B8; --muted-2:#64748B;
+      --header-bg:#1E293B; --shadow:rgba(0,0,0,0.35);
+      --overlay:rgba(0,0,0,0.65);
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);font-family:'Sora',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s}
+
+    #app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;position:relative}
+    #app::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(0,119,182,.07) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(14,124,123,.07) 0%,transparent 55%);pointer-events:none;z-index:0}
+
+    /* HEADER */
+    header{position:relative;z-index:10;background:var(--header-bg);padding:calc(1rem + var(--safe-top)) 1.2rem 0;transition:background .3s;box-shadow:0 1px 0 var(--border)}
+    .header-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:.7rem}
+    .logo{font-size:clamp(1.7rem,6vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1}
+    .logo .hff{color:var(--c-i)} .logo .dash{color:var(--muted-2);margin:0 .1em} .logo .isbar{color:var(--c-a)}
+    .header-right{display:flex;align-items:center;gap:.5rem}
+    .hbtn{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .hbtn:hover{border-color:var(--c-i);color:var(--c-i)}
+    #btn-reset:hover{border-color:#EF4444!important;color:#EF4444!important}
+    .tagline{font-size:.68rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;padding-bottom:.65rem}
+    #btn-dgs{display:flex;align-items:center;gap:.5rem;background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:.42rem .85rem;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--c-i);cursor:pointer;text-decoration:none;transition:all .2s;margin-bottom:.65rem;width:fit-content;-webkit-tap-highlight-color:transparent}
+    #btn-dgs:hover{background:var(--c-i);color:#fff;border-color:var(--c-i)}
+    .header-bar{height:3px;background:linear-gradient(90deg,var(--c-i),var(--c-b),var(--c-a))}
+
+    /* MAIN */
+    main{position:relative;z-index:1;flex:1;padding:1.4rem 1.2rem;max-width:680px;margin:0 auto;width:100%}
+    .instruction{font-size:.75rem;color:var(--muted);text-align:center;margin-bottom:1.2rem;letter-spacing:.02em}
+    #menu{display:flex;flex-direction:column}
+    #menu.hidden{display:none}
+
+    /* CARDS */
+    .card-stack{border-radius:14px;overflow:hidden;box-shadow:0 4px 20px var(--shadow)}
+    .card{display:flex;align-items:center;gap:1rem;background:var(--surface);border:none;border-bottom:1px solid var(--border);padding:1rem 1.2rem;cursor:pointer;transition:background .18s;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;text-align:left;width:100%;font-family:'Sora',sans-serif;animation:fadeUp .35s ease both}
+    .card:last-child{border-bottom:none}
+    .card:active{background:var(--surface-2)}
+    .card-stripe{position:absolute;left:0;top:0;bottom:0;width:4px}
+    .card-letter{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;line-height:1;min-width:2.2rem;text-align:center}
+    .card-label{flex:1}
+    .card-label strong{display:block;font-size:.93rem;font-weight:700;color:var(--text)}
+    .card-label span{font-size:.71rem;color:var(--muted);font-weight:400}
+    .card-arrow{font-size:1.2rem;color:var(--muted-2);transition:transform .2s}
+    .card:hover .card-arrow{transform:translateX(3px)}
+    .card:nth-child(1){animation-delay:0ms} .card:nth-child(2){animation-delay:60ms} .card:nth-child(3){animation-delay:120ms} .card:nth-child(4){animation-delay:180ms} .card:nth-child(5){animation-delay:240ms}
+
+    /* DETAIL */
+    #detail{display:none;animation:fadeUp .3s ease both}
+    #detail.active{display:block}
+    .detail-header{border-radius:14px 14px 0 0;padding:1.4rem;display:flex;align-items:center;gap:1.1rem;color:#fff}
+    .detail-badge{font-family:'IBM Plex Mono',monospace;font-size:2.5rem;font-weight:700;background:rgba(255,255,255,.18);border-radius:10px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex-shrink:0;backdrop-filter:blur(4px)}
+    .detail-meta-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;opacity:.8;margin-bottom:.1rem}
+    .detail-meta-title{font-size:1.35rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+    .detail-body{background:var(--surface);padding:1.4rem;box-shadow:0 4px 24px var(--shadow);transition:background .3s}
+    .detail-subtitle{font-size:.78rem;color:var(--muted);line-height:1.6;font-style:italic;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+    .detail-question{font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:1.1rem;display:flex;align-items:flex-start;gap:.5rem;line-height:1.5}
+    .q-mark{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.2rem;flex-shrink:0}
+    .detail-items{list-style:none;display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.3rem}
+    .detail-items li{display:flex;align-items:flex-start;gap:.65rem;font-size:.86rem;color:var(--text-2);line-height:1.55}
+    .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+    .tip-box{border:1.5px solid;border-radius:10px;padding:.9rem 1rem}
+    .tip-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:.35rem}
+    .tip-box p{font-size:.82rem;color:var(--text-2);line-height:1.65}
+    #btn-back{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.95rem;background:transparent;border:2px solid;border-top:none;border-radius:0 0 14px 14px;font-family:'Sora',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;transition:background .2s,color .2s;-webkit-tap-highlight-color:transparent}
+
+    /* FOOTER */
+    footer{position:relative;z-index:2;text-align:center;padding:.8rem 1rem calc(.8rem + var(--safe-bottom));font-size:.65rem;color:var(--muted-2);letter-spacing:.04em;border-top:1px solid var(--border);background:var(--header-bg);transition:background .3s,border-color .3s}
+    footer .sep{margin:0 .45em;opacity:.4}
+
+    /* INSTALL BANNER */
+    #install-banner{display:none;position:fixed;bottom:calc(0px + var(--safe-bottom));left:0;right:0;background:var(--c-i);color:#fff;padding:.8rem 1.2rem;z-index:200;flex-direction:row;align-items:center;gap:.8rem;box-shadow:0 -4px 20px rgba(0,0,0,.2);animation:slideUp .3s ease}
+    #install-banner.show{display:flex}
+    #install-banner p{flex:1;font-size:.8rem;font-weight:600;line-height:1.4}
+    #install-banner p span{display:block;font-weight:400;font-size:.72rem;opacity:.85}
+    #btn-install{background:#fff;color:var(--c-i);border:none;border-radius:8px;padding:.45rem .9rem;font-family:'Sora',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;flex-shrink:0}
+    #btn-dismiss{background:none;border:none;color:rgba(255,255,255,.7);font-size:1.1rem;cursor:pointer;padding:.2rem;line-height:1;flex-shrink:0}
+
+    /* ═══ ONBOARDING OVERLAY ═══ */
+    #onboarding{position:fixed;inset:0;z-index:500;background:var(--overlay);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn .3s ease}
+    #onboarding.hidden{display:none}
+    .ob-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:1.6rem 1.4rem calc(1.6rem + var(--safe-bottom));animation:slideUp .35s cubic-bezier(.34,1.26,.64,1);-webkit-overflow-scrolling:touch}
+    .ob-pill{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1.4rem}
+    .ob-step{display:none}
+    .ob-step.active{display:block;animation:fadeUp .3s ease}
+    .ob-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,119,182,.1);color:var(--c-i);border-radius:20px;padding:.3rem .85rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.9rem}
+    .ob-title{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:.4rem;letter-spacing:-.01em;line-height:1.25}
+    .ob-intro{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:1.4rem}
+    .ob-norm-ref{display:flex;align-items:center;gap:.6rem;background:rgba(0,119,182,.08);border:1.5px solid rgba(0,119,182,.2);border-radius:10px;padding:.75rem 1rem;margin-bottom:1.3rem}
+    .ob-norm-ref .ref-icon{font-size:1.1rem;flex-shrink:0}
+    .ob-norm-ref p{font-size:.75rem;color:var(--c-i);font-weight:600;line-height:1.4}
+    .ob-norm-ref p span{font-weight:400;color:var(--muted);display:block}
+    .ob-section{margin-bottom:1.2rem}
+    .ob-section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+    .ob-section p{font-size:.83rem;color:var(--text-2);line-height:1.65;margin-bottom:.5rem}
+    .ob-section p:last-child{margin-bottom:0}
+    .ob-isbar-table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.79rem}
+    .ob-isbar-table th{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:.4rem .6rem;text-align:left;border-bottom:2px solid var(--border)}
+    .ob-isbar-table td{padding:.55rem .6rem;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+    .ob-isbar-table td:first-child{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.95rem;white-space:nowrap}
+    .ob-isbar-table tr:last-child td{border-bottom:none}
+    .ob-highlight{background:rgba(14,124,123,.08);border-left:3px solid var(--c-a);border-radius:0 8px 8px 0;padding:.75rem 1rem;margin:.8rem 0;font-size:.82rem;color:var(--text-2);line-height:1.6}
+    .ob-btn-primary{display:block;width:100%;padding:1rem;background:var(--c-i);color:#fff;border:none;border-radius:12px;font-family:'Sora',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .15s;margin-top:1.4rem;-webkit-tap-highlight-color:transparent;letter-spacing:.02em}
+    .ob-btn-primary:active{transform:scale(.98);opacity:.9}
+
+    /* QUIZ */
+    .quiz-progress{display:flex;gap:5px;margin-bottom:1.3rem}
+    .quiz-pip{height:4px;flex:1;border-radius:2px;background:var(--border);transition:background .3s}
+    .quiz-pip.done{background:var(--c-a)} .quiz-pip.current{background:var(--c-i)}
+    .quiz-counter{font-size:.7rem;color:var(--muted);text-align:right;margin-bottom:1rem;font-family:'IBM Plex Mono',monospace}
+    .quiz-question{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.55;margin-bottom:1.2rem}
+    .quiz-options{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1rem}
+    .quiz-option{display:flex;align-items:center;gap:.75rem;padding:.82rem 1rem;background:var(--surface-2);border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s;font-family:'Sora',sans-serif;font-size:.83rem;color:var(--text);text-align:left;width:100%;-webkit-tap-highlight-color:transparent;line-height:1.45}
+    .quiz-option:hover:not(:disabled){border-color:var(--c-i);background:rgba(0,119,182,.06)}
+    .quiz-option.correct{border-color:var(--c-a)!important;background:rgba(14,124,123,.1)!important;color:var(--c-a)}
+    .quiz-option.wrong{border-color:#EF4444!important;background:rgba(239,68,68,.08)!important;color:#EF4444}
+    .quiz-option:disabled{cursor:default}
+    .quiz-opt-letter{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.78rem;min-width:22px;height:22px;border-radius:6px;background:var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
+    .quiz-option.correct .quiz-opt-letter{background:var(--c-a);color:#fff}
+    .quiz-option.wrong   .quiz-opt-letter{background:#EF4444;color:#fff}
+    .quiz-feedback{display:none;padding:.72rem 1rem;border-radius:10px;font-size:.81rem;font-weight:600;line-height:1.5;margin-bottom:.5rem}
+    .quiz-feedback.show{display:block}
+    .quiz-feedback.ok{background:rgba(14,124,123,.1);color:var(--c-a)}
+    .quiz-feedback.err{background:rgba(239,68,68,.08);color:#EF4444}
+    #btn-next-q{display:none;width:100%;padding:.92rem;background:var(--c-i);color:#fff;border:none;border-radius:12px;font-family:'Sora',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:.8rem;-webkit-tap-highlight-color:transparent}
+    #btn-next-q.show{display:block}
+
+    /* RESULT */
+    .quiz-result{text-align:center;padding:1rem 0}
+    .result-circle{width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 1.2rem;font-family:'IBM Plex Mono',monospace}
+    .result-circle .score-num{font-size:1.8rem;font-weight:700;line-height:1}
+    .result-circle .score-denom{font-size:.8rem;opacity:.7}
+    .result-circle.pass{background:rgba(14,124,123,.12);color:var(--c-a);border:3px solid var(--c-a)}
+    .result-circle.fail{background:rgba(239,68,68,.1);color:#EF4444;border:3px solid #EF4444}
+    .result-title{font-size:1.2rem;font-weight:800;margin-bottom:.4rem}
+    .result-msg{font-size:.83rem;color:var(--muted);line-height:1.6;margin-bottom:1.4rem}
+    #btn-retry{display:inline-block;padding:.72rem 1.5rem;background:transparent;border:2px solid #EF4444;color:#EF4444;border-radius:12px;font-family:'Sora',sans-serif;font-size:.87rem;font-weight:700;cursor:pointer;margin-bottom:.8rem;-webkit-tap-highlight-color:transparent;transition:all .2s;width:100%}
+    #btn-retry:hover{background:#EF4444;color:#fff}
+    .ob-btn-secondary{display:block;width:100%;padding:.9rem;background:var(--surface-2);color:var(--muted);border:1.5px solid var(--border);border-radius:12px;font-family:'Sora',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;margin-top:.6rem;-webkit-tap-highlight-color:transparent}
+
+    /* ANIMATIONS */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="logo">
+          <span class="hff">HFF</span><span class="dash">–</span><span class="isbar">ISBAR</span>
+        </div>
+        <p class="tagline">Passagem de Turno em Enfermagem</p>
+      </div>
+      <div class="header-right">
+        <button class="hbtn" id="btn-reset" onclick="resetOnboarding()" title="Reiniciar formação" aria-label="Reiniciar formação">↺</button>
+        <button class="hbtn" id="btn-theme" onclick="toggleTheme()" aria-label="Alternar tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+
+    <a id="btn-dgs"
+       href="https://www.dgs.pt/quality-in-health/ficheiros-de-upload/norma-001-2017-pdf.aspx"
+       target="_blank" rel="noopener noreferrer">
+      <span>📄</span>
+      <span>Norma DGS nº 001/2017</span>
+      <span style="font-size:.7rem;opacity:.6">↗</span>
+    </a>
+    <div class="header-bar"></div>
+  </header>
+
+  <main>
+    <div id="menu">
+      <p class="instruction">Selecione cada componente para consultar as diretrizes</p>
+      <div class="card-stack">
+        <button class="card" onclick="showDetail('I')">
+          <div class="card-stripe" style="background:var(--c-i)"></div>
+          <div class="card-letter" style="color:var(--c-i)">I</div>
+          <div class="card-label"><strong>Identificação</strong><span>Quem é o doente e quem comunica?</span></div>
+          <div class="card-arrow">›</div>
+        </button>
+        <button class="card" onclick="showDetail('S')">
+          <div class="card-stripe" style="background:var(--c-s)"></div>
+          <div class="card-letter" style="color:var(--c-s)">S</div>
+          <div class="card-label"><strong>Situação Atual / Causa</strong><span>Motivo atual de necessidade de cuidados</span></div>
+          <div class="card-arrow">›</div>
+        </button>
+        <button class="card" onclick="showDetail('B')">
+          <div class="card-stripe" style="background:var(--c-b)"></div>
+          <div class="card-letter" style="color:var(--c-b)">B</div>
+          <div class="card-label"><strong>Antecedentes / Anamnese</strong><span>Factos clínicos e contexto relevante</span></div>
+          <div class="card-arrow">›</div>
+        </button>
+        <button class="card" onclick="showDetail('A')">
+          <div class="card-stripe" style="background:var(--c-a)"></div>
+          <div class="card-letter" style="color:var(--c-a)">A</div>
+          <div class="card-label"><strong>Avaliação</strong><span>Estado do doente e eficácia das medidas</span></div>
+          <div class="card-arrow">›</div>
+        </button>
+        <button class="card" onclick="showDetail('R')">
+          <div class="card-stripe" style="background:var(--c-r)"></div>
+          <div class="card-letter" style="color:var(--c-r)">R</div>
+          <div class="card-label"><strong>Recomendações</strong><span>Plano de continuidade de cuidados</span></div>
+          <div class="card-arrow">›</div>
+        </button>
+      </div>
+    </div>
+
+    <div id="detail">
+      <div id="detail-header" class="detail-header">
+        <div id="detail-badge" class="detail-badge"></div>
+        <div>
+          <div class="detail-meta-label">Componente ISBAR</div>
+          <div id="detail-title" class="detail-meta-title"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <p id="detail-subtitle" class="detail-subtitle"></p>
+        <div id="detail-question" class="detail-question"></div>
+        <ul id="detail-items" class="detail-items"></ul>
+        <div id="tip-box" class="tip-box">
+          <div id="tip-label" class="tip-label"></div>
+          <p id="tip-text"></p>
+        </div>
+      </div>
+      <button id="btn-back" onclick="showMenu()">← Voltar ao Menu</button>
+    </div>
+  </main>
+
+  <footer>
+    <span>Hospital Prof. Doutor Fernando Fonseca</span>
+    <span class="sep">·</span>
+    <span>Norma DGS nº 001/2017</span>
+    <span class="sep">·</span>
+    <span>Segurança do Doente</span>
+  </footer>
+</div>
+
+<div id="install-banner">
+  <p>Instalar HFF-ISBAR<span>Acesso rápido no ecrã inicial</span></p>
+  <button id="btn-install" onclick="installPWA()">Instalar</button>
+  <button id="btn-dismiss" onclick="dismissBanner()" aria-label="Fechar">✕</button>
+</div>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div id="onboarding">
+  <div class="ob-sheet">
+    <div class="ob-pill"></div>
+
+    <!-- STEP 1: READING -->
+    <div class="ob-step active" id="step-read">
+      <div class="ob-badge">📋 Leitura obrigatória</div>
+      <h2 class="ob-title">Comunicação eficaz na transição de cuidados</h2>
+      <p class="ob-intro">Antes de utilizar a app, leia este resumo da Norma DGS nº 001/2017 que fundamenta a metodologia ISBAR.</p>
+
+      <div class="ob-norm-ref">
+        <span class="ref-icon">⚖️</span>
+        <p>Norma nº 001/2017 — Direção-Geral da Saúde
+          <span>Emitida em 08/02/2017 · Área da Qualidade Organizacional</span>
+        </p>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title">O que é a transição de cuidados?</div>
+        <p>É qualquer momento em que se verifica a <strong>transferência de responsabilidade de cuidados e de informação</strong> entre prestadores, garantindo a continuidade e segurança dos mesmos.</p>
+        <p>São momentos vulneráveis/críticos as <strong>admissões, altas hospitalares</strong> e as <strong>mudanças de turno</strong> — situações de maior risco de erro na transferência de informação.</p>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title">Por que é importante?</div>
+        <div class="ob-highlight">
+          A evidência indica que até <strong>70% dos eventos adversos</strong> em saúde ocorrem devido a falhas de comunicação entre profissionais nos momentos de transição de cuidados.
+        </div>
+        <p>As falhas mais comuns são: omissões de informação, erros nas informações, falta de precisão e falta de priorização das atividades.</p>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title">A mnemónica ISBAR — Anexo I da Norma</div>
+        <p>Ferramenta de padronização da comunicação, de memorização fácil e replicável em diferentes contextos:</p>
+        <table class="ob-isbar-table">
+          <thead><tr><th>Letra</th><th>Componente</th><th>Conteúdo principal</th></tr></thead>
+          <tbody>
+            <tr><td style="color:#0077B6">I</td><td><strong>Identificação</strong></td><td>Nome, data nasc., género do doente; profissional emissor e recetor; serviço; cuidador informal</td></tr>
+            <tr><td style="color:#0096C7">S</td><td><strong>Situação Atual</strong></td><td>Data/hora de admissão; motivo atual de necessidade de cuidados; MCDT realizados ou a realizar</td></tr>
+            <tr><td style="color:#00B4D8">B</td><td><strong>Antecedentes</strong></td><td>Antecedentes clínicos; dependência; diretivas antecipadas; alergias; hábitos; terapêutica; técnicas invasivas; risco infeção; situação social</td></tr>
+            <tr><td style="color:#0E7C7B">A</td><td><strong>Avaliação</strong></td><td>Problemas ativos; terapêutica instituída; alterações significativas; eficácia das medidas; focos, diagnósticos e intervenções ativas</td></tr>
+            <tr><td style="color:#1B5E4B">R</td><td><strong>Recomendações</strong></td><td>Plano de continuidade de cuidados; MCDT agendados; necessidades do cuidador informal</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title">O que obriga a norma?</div>
+        <p>A técnica ISBAR aplica-se em <strong>todos os níveis de prestação de cuidados</strong>. A passagem de turno oral deve ser realizada <strong>sem interrupções</strong>, utilizando o modelo ISBAR.</p>
+        <p>Os responsáveis devem estar identificados (nome, categoria e função). As instituições devem garantir <strong>formação específica</strong> e monitorização por auditoria interna.</p>
+      </div>
+
+      <button class="ob-btn-primary" onclick="goToQuiz()">Li e compreendi — continuar para o Quiz →</button>
+    </div>
+
+    <!-- STEP 2: QUIZ -->
+    <div class="ob-step" id="step-quiz">
+      <div class="ob-badge">🎯 Quiz de verificação</div>
+      <h2 class="ob-title">5 perguntas sobre a Norma</h2>
+      <p class="ob-intro">São necessárias pelo menos 4 respostas corretas para aceder à app. Pode reler e tentar novamente.</p>
+
+      <div class="quiz-progress" id="quiz-progress">
+        <div class="quiz-pip current" id="pip-0"></div>
+        <div class="quiz-pip" id="pip-1"></div>
+        <div class="quiz-pip" id="pip-2"></div>
+        <div class="quiz-pip" id="pip-3"></div>
+        <div class="quiz-pip" id="pip-4"></div>
+      </div>
+      <div class="quiz-counter" id="quiz-counter">Pergunta 1 / 5</div>
+
+      <div id="quiz-body">
+        <p class="quiz-question" id="q-text"></p>
+        <div class="quiz-options" id="q-options"></div>
+        <div class="quiz-feedback" id="q-feedback"></div>
+        <button id="btn-next-q" onclick="nextQuestion()">Próxima →</button>
+      </div>
+
+      <div id="quiz-result" class="quiz-result" style="display:none">
+        <div class="result-circle" id="result-circle">
+          <span class="score-num" id="result-num"></span>
+          <span class="score-denom">/5</span>
+        </div>
+        <p class="result-title" id="result-title"></p>
+        <p class="result-msg" id="result-msg"></p>
+        <div id="result-actions"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ── ISBAR DATA ── */
+const DATA = {
+  I:{color:'#0077B6',light:'#E0F2FE',title:'Identificação',subtitle:'Identificação e localização precisa dos intervenientes na comunicação (emissor e recetor) bem como do doente a que diz respeito a comunicação.',question:'Quem é o doente e quem está a comunicar?',items:['a) Nome completo, data de nascimento, género e nacionalidade do doente','b) Nome e função do Profissional de Saúde emissor','c) Nome e função do Profissional de Saúde recetor','d) Serviço de origem / destinatário','e) Identificação da pessoa significativa / cuidador informal'],tip:'A identificação inequívoca do doente e dos profissionais é obrigatória. Utilize sempre pelo menos dois identificadores do doente (nome completo + data de nascimento).'},
+  S:{color:'#0096C7',light:'#E0F7FA',title:'Situação Atual / Causa',subtitle:'Descrição do motivo atual de necessidade de cuidados de saúde.',question:'Qual é o motivo atual de necessidade de cuidados de saúde?',items:['a) Data e hora de admissão','b) Descrição do motivo atual da necessidade de cuidados de saúde','c) Meios complementares de diagnóstico e terapêutica (MCDT) realizados ou a realizar'],tip:'Seja conciso e objetivo. Foque-se na causa que motivou o internamento ou na alteração clínica mais recente e significativa.'},
+  B:{color:'#00B4D8',light:'#E0FCFF',title:'Antecedentes / Anamnese',subtitle:'Descrição de factos clínicos, de enfermagem e outros relevantes, diretivas antecipadas de vontade.',question:'Quais os antecedentes e contexto clínico relevantes?',items:['a) Antecedentes clínicos','b) Níveis de dependência','c) Diretivas antecipadas de vontade','d) Alergias conhecidas ou da sua ausência','e) Hábitos relevantes','f) Terapêutica de ambulatório e adesão à mesma','g) Técnicas invasivas realizadas','h) Presença ou risco de colonização / infeção associada aos cuidados de saúde e medidas a implementar','i) Identificação da situação social e da capacitação do cuidador'],tip:'As diretivas antecipadas de vontade e as alergias devem ser sempre mencionadas, mesmo que negativas.'},
+  A:{color:'#0E7C7B',light:'#E0F5F5',title:'Avaliação',subtitle:'Informações sobre o estado do doente, terapêutica medicamentosa e não-medicamentosa instituída, estratégias de tratamento, alterações de estado de saúde significativas e avaliação da eficácia das medidas implementadas.',question:'Qual é a avaliação atual do estado do doente?',items:['a) Problemas ativos','b) Terapêutica medicamentosa e não-medicamentosa instituída','c) Alterações de estado de saúde significativas e avaliação da eficácia das medidas implementadas','d) Focos de atenção, diagnósticos e intervenções ativas'],tip:'Esta componente exige interpretação clínica. Partilhe a sua leitura sobre a evolução do doente e a resposta às intervenções realizadas.'},
+  R:{color:'#1B5E4B',light:'#D1FAE5',title:'Recomendações',subtitle:'Descrição de atitudes e plano terapêutico adequados à situação clínica do doente.',question:'Qual é o plano e o que precisa de ser assegurado?',items:['a) Indicação do plano de continuidade de cuidados','b) Informação sobre consultas e MCDT agendados','c) Identificação de necessidades do cuidador informal'],tip:'Confirme com o colega que recebe se ficaram dúvidas e valide a compreensão da informação transmitida.'},
+};
+
+/* ── QUESTIONS — baseadas no Anexo I, Norma DGS 001/2017 ── */
+const QUESTIONS=[
+  {q:'Segundo a Norma DGS nº 001/2017, em que situações se aplica a técnica ISBAR?',options:['Apenas nas urgências e cuidados intensivos','Em todos os níveis de prestação de cuidados que envolvam transição dos mesmos','Somente nas mudanças de turno entre enfermeiros','Apenas quando o médico o solicitar expressamente'],correct:1,ok:'Correto! A norma determina que a técnica ISBAR se aplica em todos os níveis de prestação de cuidados que envolvam transição dos mesmos.',err:'Incorreto. A norma determina que a técnica ISBAR se aplica em todos os níveis de prestação de cuidados que envolvam transição dos mesmos, sem exceções.'},
+  {q:'Qual dos seguintes itens pertence ao componente "I" — Identificação, conforme o Anexo I da Norma?',options:['Data e hora de admissão do doente','Focos de atenção e intervenções ativas','Identificação da pessoa significativa / cuidador informal','Terapêutica de ambulatório e adesão à mesma'],correct:2,ok:'Correto! O componente "I" inclui a identificação da pessoa significativa/cuidador informal, bem como o nome completo, data de nascimento, género do doente e identificação dos profissionais.',err:'Incorreto. A "identificação da pessoa significativa/cuidador informal" é que pertence ao componente "I". Os outros itens pertencem a "S", "A" e "B" respetivamente.'},
+  {q:'No componente "B" — Antecedentes/Anamnese, qual é a abordagem correta para as alergias?',options:['Só se mencionam se existirem alergias conhecidas','Devem ser referidas as alergias conhecidas ou a sua ausência','As alergias só são relevantes no componente "A" — Avaliação','Não é necessário mencionar alergias na passagem de turno oral'],correct:1,ok:'Correto! O Anexo I especifica: "alergias conhecidas ou da sua ausência". Mesmo a ausência de alergias deve ser comunicada expressamente.',err:'Incorreto. O Anexo I é explícito: devem ser referidas as "alergias conhecidas ou da sua ausência". A ausência de alergias também deve ser comunicada.'},
+  {q:'O componente "A" — Avaliação inclui qual dos seguintes elementos?',options:['Data e hora de admissão e MCDT realizados','Plano de continuidade de cuidados e MCDT agendados','Focos de atenção, diagnósticos e intervenções ativas','Serviço de origem e identificação do cuidador informal'],correct:2,ok:'Correto! O componente "A" inclui problemas ativos, terapêutica instituída, alterações significativas, eficácia das medidas e focos de atenção, diagnósticos e intervenções ativas.',err:'Incorreto. "Focos de atenção, diagnósticos e intervenções ativas" é o elemento que pertence ao componente "A". Os outros itens pertencem a "S", "R" e "I" respetivamente.'},
+  {q:'Segundo a Norma DGS nº 001/2017, como deve ser realizada a passagem de turno oral?',options:['Com interrupções pontuais permitidas para esclarecimento de dúvidas','Apenas de forma escrita, sem transmissão oral','Sem interrupções, utilizando o modelo ISBAR','O profissional pode escolher a forma que considerar mais adequada'],correct:2,ok:'Correto! A norma é explícita: a transmissão de informação oral deve ser realizada sem interrupções, utilizando o modelo contido no Anexo I.',err:'Incorreto. A norma determina que a passagem de turno oral deve ser realizada sem interrupções, utilizando o modelo ISBAR.'},
+];
+
+/* ── STATE ── */
+let currentQ=0,score=0,answered=false;
+
+/* ── THEME ── */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem('hff_theme',t);
+}
+function autoTheme(){
+  const saved=localStorage.getItem('hff_theme');
+  if(saved){applyTheme(saved);return;}
+  const h=new Date().getHours();
+  applyTheme((h>=20||h<8)?'dark':'light');
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+
+/* ── ONBOARDING ── */
+function checkOnboarding(){
+  if(localStorage.getItem('hff_quiz_passed')==='1'){
+    document.getElementById('onboarding').classList.add('hidden');
+  }
+}
+function resetOnboarding(){
+  if(confirm('Reiniciar a formação inicial?\nTerá de voltar a completar o quiz.')){
+    localStorage.removeItem('hff_quiz_passed');
+    currentQ=0;score=0;answered=false;
+    document.getElementById('quiz-result').style.display='none';
+    document.getElementById('quiz-body').style.display='block';
+    showStep('step-read');
+    document.getElementById('onboarding').classList.remove('hidden');
+  }
+}
+function goToQuiz(){showStep('step-quiz');renderQuestion();}
+function showStep(id){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── QUIZ ── */
+function renderQuestion(){
+  const q=QUESTIONS[currentQ];
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('quiz-counter').textContent=`Pergunta ${currentQ+1} / ${QUESTIONS.length}`;
+  QUESTIONS.forEach((_,i)=>{
+    const p=document.getElementById(`pip-${i}`);
+    p.className='quiz-pip'+(i<currentQ?' done':i===currentQ?' current':'');
+  });
+  const letters=['A','B','C','D'];
+  document.getElementById('q-options').innerHTML=q.options.map((opt,i)=>
+    `<button class="quiz-option" onclick="selectAnswer(${i})" id="opt-${i}">
+      <span class="quiz-opt-letter">${letters[i]}</span><span>${opt}</span>
+    </button>`
+  ).join('');
+  const fb=document.getElementById('q-feedback');
+  fb.className='quiz-feedback';fb.textContent='';
+  const bn=document.getElementById('btn-next-q');
+  bn.className='';
+  bn.textContent=currentQ<QUESTIONS.length-1?'Próxima pergunta →':'Ver resultado →';
+  answered=false;
+}
+
+function selectAnswer(idx){
+  if(answered)return;
+  answered=true;
+  const q=QUESTIONS[currentQ];
+  document.querySelectorAll('.quiz-option').forEach(o=>o.disabled=true);
+  const fb=document.getElementById('q-feedback');
+  if(idx===q.correct){
+    score++;
+    document.getElementById(`opt-${idx}`).classList.add('correct');
+    fb.className='quiz-feedback show ok';
+    fb.textContent='✓ '+q.ok;
+  }else{
+    document.getElementById(`opt-${idx}`).classList.add('wrong');
+    document.getElementById(`opt-${q.correct}`).classList.add('correct');
+    fb.className='quiz-feedback show err';
+    fb.textContent='✗ '+q.err;
+  }
+  document.getElementById('btn-next-q').classList.add('show');
+}
+
+function nextQuestion(){
+  currentQ++;
+  if(currentQ>=QUESTIONS.length)showResult();
+  else renderQuestion();
+}
+
+function showResult(){
+  document.getElementById('quiz-body').style.display='none';
+  document.getElementById('quiz-result').style.display='block';
+  const pass=score>=4;
+  document.getElementById('result-circle').className='result-circle '+(pass?'pass':'fail');
+  document.getElementById('result-num').textContent=score;
+  document.getElementById('result-title').textContent=pass?'🎉 Formação concluída!':'📖 Tente novamente';
+  document.getElementById('result-msg').textContent=pass
+    ?`Obteve ${score}/5. Demonstrou conhecimento sólido sobre a Norma DGS nº 001/2017 e a metodologia ISBAR. Pode agora utilizar a app.`
+    :`Obteve ${score}/5. São necessárias pelo menos 4 respostas corretas. Releia o resumo da norma e tente novamente.`;
+  const actions=document.getElementById('result-actions');
+  if(pass){
+    localStorage.setItem('hff_quiz_passed','1');
+    actions.innerHTML=`<button class="ob-btn-primary" onclick="document.getElementById('onboarding').classList.add('hidden')">Entrar na app →</button>`;
+  }else{
+    actions.innerHTML=`
+      <button id="btn-retry" onclick="retryQuiz()">↺ Repetir o quiz</button>
+      <button class="ob-btn-secondary" onclick="goToReading()">📋 Reler a norma</button>`;
+  }
+}
+
+function retryQuiz(){
+  currentQ=0;score=0;answered=false;
+  document.getElementById('quiz-result').style.display='none';
+  document.getElementById('quiz-body').style.display='block';
+  renderQuestion();
+}
+function goToReading(){
+  currentQ=0;score=0;answered=false;
+  document.getElementById('quiz-result').style.display='none';
+  document.getElementById('quiz-body').style.display='block';
+  showStep('step-read');
+}
+
+/* ── ISBAR NAVIGATION ── */
+function showDetail(key){
+  const d=DATA[key];
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('detail-badge').textContent=key;
+  document.getElementById('detail-title').textContent=d.title;
+  document.getElementById('detail-subtitle').textContent=d.subtitle;
+  document.getElementById('detail-header').style.background=`linear-gradient(135deg,${d.color} 0%,${d.color}CC 100%)`;
+  document.getElementById('detail-question').innerHTML=`<span class="q-mark" style="color:${d.color}">?</span>${d.question}`;
+  document.getElementById('detail-items').innerHTML=d.items.map(item=>`<li><div class="dot" style="background:${d.color}"></div><span>${item}</span></li>`).join('');
+  const tb=document.getElementById('tip-box');
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  tb.style.borderColor=d.color;
+  tb.style.background=dark?d.color+'18':d.light;
+  document.getElementById('tip-label').style.color=d.color;
+  document.getElementById('tip-label').textContent='💡 Nota Clínica';
+  document.getElementById('tip-text').textContent=d.tip;
+  const bb=document.getElementById('btn-back');
+  bb.style.borderColor=d.color;bb.style.color=d.color;
+  bb.onmouseenter=()=>{bb.style.background=d.color;bb.style.color='#fff';};
+  bb.onmouseleave=()=>{bb.style.background='transparent';bb.style.color=d.color;};
+  document.getElementById('detail').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showMenu(){
+  document.getElementById('detail').classList.remove('active');
+  document.getElementById('menu').classList.remove('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── PWA ── */
+let deferredPrompt=null;
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  if(localStorage.getItem('hff_quiz_passed')==='1')
+    document.getElementById('install-banner').classList.add('show');
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('install-banner').classList.remove('show');deferredPrompt=null;
+});
+function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').classList.remove('show');});}
+function dismissBanner(){document.getElementById('install-banner').classList.remove('show');}
+
+/* ── INIT ── */
+autoTheme();
+checkOnboarding();
+</script>
+</body>
+</html>

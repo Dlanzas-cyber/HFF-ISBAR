@@ -1,0 +1,33 @@
+{
+  "name": "HFF-ISBAR — Passagem de Turno",
+  "short_name": "HFF-ISBAR",
+  "description": "Ferramenta de suporte à passagem de turno em enfermagem baseada na metodologia ISBAR.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0F4F8",
+  "theme_color": "#0077B6",
+  "orientation": "portrait-primary",
+  "lang": "pt-PT",
+  "categories": ["medical", "health"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/screenshot.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    }
+  ]
+}
